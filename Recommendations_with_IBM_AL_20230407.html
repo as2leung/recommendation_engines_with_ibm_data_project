@@ -3,7 +3,7 @@
 <head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Recommendations_with_IBM</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>Recommendations_with_IBM_AL_20230407</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 
 
 
@@ -18810,23 +18810,42 @@ Length: 5148, dtype: float64</pre>
 <span class="sd">    Returns an ordered</span>
 <span class="sd">    </span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="c1"># get row from user_item matrix for the user_id provided</span>
-    <span class="n">user_articles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">user_item</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">user_id</span><span class="p">])</span>
-    
-    <span class="c1"># compute similarity of each user to the provided user</span>
-    <span class="n">dotp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">user_articles</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">user_item</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    
-    <span class="c1"># convert results to Series with and index of user_ids</span>
-    <span class="n">simiarlity</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">dotp</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">user_item</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="c1">#This commented out portion is the old method before re-factoring. It adds extra steps to convert dataframes to np.arrays </span>
+<span class="c1">#and retreive the specific user_id #array first. This causes a slow down and increase in complexity. To address the</span>
+<span class="c1">#required feedback, I used an alternative approach of computing the similarity of each user vs every user in the </span>
+<span class="c1">#user_item matrix before finding the specific user from the index. I also used the dataframes directly and the dot</span>
+<span class="c1">#and transpose methods.</span>
 
-    <span class="c1"># sort by similarity</span>
-    <span class="n">simiarlity</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1">#     # get row from user_item matrix for the user_id provided</span>
+<span class="c1">#     user_articles = np.array(user_item.loc[user_id])</span>
     
+<span class="c1">#     # compute similarity of each user to the provided user</span>
+<span class="c1">#     dotp = np.dot(user_articles, np.array(user_item).T)</span>
+    
+<span class="c1">#     # convert results to Series with and index of user_ids</span>
+<span class="c1">#     simiarlity = pd.Series(dotp, index=user_item.index)</span>
+
+<span class="c1">#     # sort by similarity</span>
+<span class="c1">#     simiarlity.sort_values(ascending=False, inplace=True)</span>
+    
+<span class="c1">#     # remove the own user&#39;s id </span>
+<span class="c1">#     simiarlity.drop(index=user_id, inplace=True)</span>
+
+<span class="c1">#     # create list of just the ids</span>
+<span class="c1">#     most_similar_users = simiarlity.index.tolist()</span>
+    
+    
+    <span class="c1"># compute similarity of each user vs every user in the user_item matrix</span>
+    <span class="n">users_similar</span> <span class="o">=</span> <span class="n">user_item</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">user_item</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    
+    <span class="c1"># retrieve sorted similarity scores to each user for the provided user_id</span>
+    <span class="n">user_id_sorted</span> <span class="o">=</span> <span class="n">users_similar</span><span class="p">[</span><span class="n">user_id</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
     <span class="c1"># remove the own user&#39;s id </span>
-    <span class="n">simiarlity</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">user_id_sorted</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="c1"># create list of just the ids</span>
-    <span class="n">most_similar_users</span> <span class="o">=</span> <span class="n">simiarlity</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">most_similar_users</span> <span class="o">=</span> <span class="n">user_id_sorted</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
     
     
        
